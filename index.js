@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
+const { ObjectId } = require("mongodb");
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 const port = process.env.PORT;
@@ -32,6 +33,29 @@ async function run() {
     const creatorCollection = db.collection("promt_collection")
 
 
+    //Getting Data for myPromt
+    app.get("/api/creator/mypromt",async (req, res) => {
+      const {email} = req.query;
+      const result = await creatorCollection.find({creatorEmail: email}).toArray();
+      res.send(result)
+    })
+
+    //delet api in myCreator desboard
+    app.delete("/api/creator/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+      
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: error.message });
+      }
+    });
+
+
     // add promt with creatorpage
     app.post("/api/creator", async (req, res) => {
       const {title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility, creatorId, creatorName, creatorEmail, creatorImage,} = req.body;
@@ -39,7 +63,17 @@ async function run() {
       const promtData = {   title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility, creatorId, creatorName, creatorEmail, creatorImage, copyCount: 0, bookmarkCount: 0, status: "pending", createdAt: new Date(), updatedAt: new Date(),}
 
       const result = await creatorCollection.insertOne(promtData)
-      return result
+      res.status(201).json({
+      success: true,
+      message: "Prompt added successfully",
+      insertedId: result.insertedId,
+    });
+    })
+
+    app.get("/api/allPromt", async ( req, res) => {
+      const promt = creatorCollection.find();
+      const result = await promt.toArray();
+      res.send(result)
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -59,33 +93,3 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 
-// Creator Dashboard (Private Route)
-// Routes:
-// Creator Dashboard Home
-// Add Prompt
-// My Prompts
-// Creator Dashboard Home (Analytics)
-// Display summary cards:
-// Total Prompts
-// Total Copies
-// Total Bookmarks
-// Analytics Chart
-// Display charts using Recharts:
-// Total Copies
-// Prompt Growth
-// Add Prompt
-// Fields:
-// Prompt Title
-// Prompt Description
-// Prompt Content
-// Category
-// AI Tool
-// Tags
-// Difficulty Level ( Beginner / Intermediate / Pro )
-// Thumbnail Image (Image upload functionality)
-// Visibility (Public / Private)
-// copyCount: 0 (initially)
-// status: pending (Default value)
-// All newly submitted prompts are automatically marked as pending and remain hidden from the marketplace until reviewed by an admin. Admins can either approve the prompt, or reject it if it does not meet platform guidelines.
-// My Prompts
-// Show all prompts added by the creator in table format and Implement delete and update functionality.
