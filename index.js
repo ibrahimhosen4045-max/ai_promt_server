@@ -55,6 +55,37 @@ async function run() {
       }
     });
 
+    //Update creator api deshboard
+
+    app.patch("/api/creator/:id", async (req, res)=> {
+      try{
+        const id = req.params.id;
+        const updateData = req.body;
+
+        const filter = {
+          _id: new ObjectId(id)
+        };
+
+        const updateDoc = {
+          $set: {
+            title: updateData.title,
+            description:updateData.description,
+            content: updateData.content,
+            visibility:updateData.visibility,
+            difficulty: updateData.difficulty,
+          }
+        }
+
+        const result = await creatorCollection.updateOne(filter, updateDoc)
+        res.send(result)
+      } catch(error){
+        res.status(500).send({
+          message: "Update failed",
+          error: error.message,
+        })
+      }
+    })
+
 
     // add promt with creatorpage
     app.post("/api/creator", async (req, res) => {
