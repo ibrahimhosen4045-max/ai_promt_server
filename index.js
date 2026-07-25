@@ -32,7 +32,7 @@ async function run() {
     const db = client.db('prompt_shearing_platform')
     const creatorCollection = db.collection("promt_collection")
 
-
+    //creator...........................................................
     //Getting Data for myPromt
     app.get("/api/creator/mypromt",async (req, res) => {
       const {email} = req.query;
@@ -189,6 +189,8 @@ app.get("/api/creator/dashboard", async (req, res) => {
     });
     })
 
+    //usser..............................................................
+
     //user add promt api
 
 app.post("/api/user/addPrompt", async (req, res) => {
@@ -222,7 +224,7 @@ app.post("/api/user/addPrompt", async (req, res) => {
       });
     }
 
-    const promptData = { title, description, content, category, aiTool, tags, difficulty, thumbnail, userId, userName, userEmail, userImage, role: "user", visibility: "Public", status: "pending", visibility: "Public", isPremium: false, copyCount: 0, bookmarkCount: 0, reviewCount: 0, averageRating: 0.0, viewCount: 0, createdAt: new Date(), updatedAt: new Date(), };
+    const promptData = { title, description, content, category, aiTool, tags, difficulty, thumbnail, userId, userName, userEmail, userImage, role: "user", visibility: "Public", status: "pending", isPremium: false, copyCount: 0, bookmarkCount: 0, reviewCount: 0, averageRating: 0.0, viewCount: 0, createdAt: new Date(), updatedAt: new Date(), };
 
     const result = await creatorCollection.insertOne(promptData);
 
@@ -239,6 +241,12 @@ app.post("/api/user/addPrompt", async (req, res) => {
     });
   }
 });
+    //user get  mypromt api
+    app.get("/api/user/myPrompt",async (req, res) => {
+      const {email} = req.query;
+      const result = await creatorCollection.find({userEmail: email, role: "user"}).toArray();
+      res.send(result)
+    })
 
     app.get("/api/allPromt", async ( req, res) => {
       const result = await creatorCollection
