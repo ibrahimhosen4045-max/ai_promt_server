@@ -248,6 +248,59 @@ app.post("/api/user/addPrompt", async (req, res) => {
       res.send(result)
     })
 
+    //user update mypromt
+
+    app.patch("/api/user/:id", async (req, res)=> {
+      try{
+       const { id } = req.params;
+       const { userEmail, ...updateData } = req.body;
+
+       const filter = {
+         _id: new ObjectId(id),
+         userEmail,
+       };
+
+        const updateDoc = {
+          $set: {
+            title: updateData.title,
+            description:updateData.description,
+            content: updateData.content,
+            visibility:updateData.visibility,
+            difficulty: updateData.difficulty,
+            updatedAt: new Date()
+          }
+        }
+
+        const result = await creatorCollection.updateOne(filter, updateDoc)
+        res.send(result)
+      } catch(error){
+        res.status(500).send({
+          message: "Update failed",
+          error: error.message,
+        })
+      }
+    })
+
+    //user delete my promt
+
+    app.delete("/api/user/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { email } = req.query;
+
+        const result = await creatorCollection.deleteOne({
+          _id: new ObjectId(id),
+          userEmail: email,
+        });
+      
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: error.message });
+      }
+    });
+
+    //app all promt ..........................................
+
     app.get("/api/allPromt", async ( req, res) => {
       const result = await creatorCollection
       .find({
