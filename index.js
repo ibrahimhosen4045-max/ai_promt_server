@@ -34,6 +34,8 @@ async function run() {
     const usersCollection = db.collection("user");
     const paymentCollection = db.collection("payments");
 
+    
+
     //creator...........................................................
     //Getting Data for myPromt
     app.get("/api/creator/mypromt",async (req, res) => {
@@ -512,6 +514,50 @@ app.get("/api/creator/dashboard", async (req, res) => {
 
       res.send(result);
     })
+
+
+//admin.............................................................................
+
+// all regisrer user
+
+    app.get("/api/allUser/register", async(req, res) => {
+      try {
+        const result = await usersCollection.find().toArray()
+        res.send(result)
+      } catch (error){
+        res.status(500).send(error)
+      }
+    })
+
+    //admin user er role chang api
+
+    app.patch("/api/admin/user/role/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { role } = req.body;
+      
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              role,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Role updated successfully",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
