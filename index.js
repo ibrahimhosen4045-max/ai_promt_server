@@ -49,15 +49,28 @@ async function run() {
       try {
         const { id } = req.params;
         const { email } = req.query;
-
+      
+        const user = await usersCollection.findOne({
+          email,
+        });
+        if (user?.isBlocked) {
+          return res.status(403).json({
+            success: false,
+            message: "Your account has been blocked.",
+          });
+        }
+      
         const result = await creatorCollection.deleteOne({
           _id: new ObjectId(id),
           creatorEmail: email,
         });
       
         res.send(result);
+      
       } catch (error) {
-        res.status(500).send({ message: error.message });
+        res.status(500).send({
+          message: error.message,
+        });
       }
     });
 
@@ -65,8 +78,20 @@ async function run() {
 
     app.patch("/api/creator/:id", async (req, res)=> {
       try{
+      
        const { id } = req.params;
        const { creatorEmail, ...updateData } = req.body;
+
+         const user = await usersCollection.findOne({
+            email: creatorEmail,
+          });
+        
+          if (user?.isBlocked) {
+            return res.status(403).json({
+              success: false,
+             message: "Your account has been blocked.",
+            });
+          }
 
        const filter = {
          _id: new ObjectId(id),
@@ -173,7 +198,17 @@ app.get("/api/creator/dashboard", async (req, res) => {
     app.post("/api/creator", async (req, res) => {
       const {title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility,  creatorId, creatorName, creatorEmail, creatorImage,} = req.body;
 
-      const promtData = {   title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility, creatorId, creatorName, creatorEmail, creatorImage, status: "pending", isPremium: false, copyCount: 0, reviewCount: 0, averageRating: 0.0, bookmarkCount: 0, viewCount: 0, createdAt: new Date(), updatedAt: new Date(),}
+
+      const user = await usersCollection.findOne({
+        email: creatorEmail,
+      });
+
+      if (user?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+         message: "Your account has been blocked.",
+        });
+      }
 
       const existing = await creatorCollection.findOne({title, creatorEmail})
 
@@ -182,6 +217,9 @@ app.get("/api/creator/dashboard", async (req, res) => {
           message: "You already have a promt with this title"
         })
       }
+
+      const promtData = {   title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility, creatorId, creatorName, creatorEmail, creatorImage, status: "pending", isPremium: false, copyCount: 0, reviewCount: 0, averageRating: 0.0, bookmarkCount: 0, viewCount: 0, createdAt: new Date(), updatedAt: new Date(),}
+
 
       const result = await creatorCollection.insertOne(promtData)
 
@@ -200,6 +238,17 @@ app.get("/api/creator/dashboard", async (req, res) => {
     app.post("/api/user/addPrompt", async (req, res) => {
   try {
     const { title, description, content, category, aiTool, tags, difficulty, thumbnail, userId, userName, userEmail, userImage, } = req.body;
+
+    const user = await usersCollection.findOne({
+        email: userEmail,
+      });
+
+      if (user?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+         message: "Your account has been blocked.",
+        });
+      }
 
     // একই Title আছে কিনা
     const existing = await creatorCollection.findOne({
@@ -260,6 +309,17 @@ app.get("/api/creator/dashboard", async (req, res) => {
        const { id } = req.params;
        const { userEmail, ...updateData } = req.body;
 
+       const user = await usersCollection.findOne({
+        email: userEmail,
+       });
+
+      if (user?.isBlocked) {
+        return res.status(403).json({
+          success: false,
+         message: "Your account has been blocked.",
+        });
+      }
+
        const filter = {
          _id: new ObjectId(id),
          userEmail,
@@ -293,6 +353,17 @@ app.get("/api/creator/dashboard", async (req, res) => {
       try {
         const { id } = req.params;
         const { email } = req.query;
+
+        const user = await usersCollection.findOne({
+          email,
+        });
+
+        if (user?.isBlocked) {
+          return res.status(403).json({
+            success: false,
+          message: "Your account has been blocked.",
+          });
+        }
 
         const result = await creatorCollection.deleteOne({
           _id: new ObjectId(id),
@@ -365,6 +436,17 @@ app.get("/api/creator/dashboard", async (req, res) => {
     app.put("/api/user/profile", async (req, res) => {
       try {
         const { email, name, image } = req.body;
+
+        const users = await usersCollection.findOne({
+          email,
+        });
+
+        if (users?.isBlocked) {
+          return res.status(403).json({
+            success: false,
+            message: "Your account has been blocked.",
+          });
+        }
       
         const result = await usersCollection.updateOne(
           { email },
@@ -398,6 +480,18 @@ app.get("/api/creator/dashboard", async (req, res) => {
     app.patch("/api/user-premium", async (req, res) => {
       try {
         const { email } = req.body;
+
+        const users = await usersCollection.findOne({
+          email,
+        });
+
+        if (users?.isBlocked) {
+          return res.status(403).json({
+            success: false,
+            message: "Your account has been blocked.",
+          });
+        }
+      
 
         const user = await usersCollection.findOne({ email });
 
@@ -549,6 +643,96 @@ app.get("/api/creator/dashboard", async (req, res) => {
         res.send({
           success: true,
           message: "Role updated successfully",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin user delet api
+
+    app.delete("/api/admin/user-delet/:id", async (req, res) => {
+      try {
+        console.log("DELETE API HIT");
+      
+        const { id } = req.params;
+        console.log("ID:", id);
+      
+        const user = await usersCollection.findOne({
+          _id: new ObjectId(id),
+        });
+      
+        console.log("USER:", user);
+      
+        if (!user) {
+          return res.status(404).send({
+            success: false,
+            message: "User not found",
+          });
+        }
+      
+        const promptResult = await creatorCollection.deleteMany({
+          $or: [
+            { userEmail: user.email },
+            { creatorEmail: user.email },
+          ],
+        });
+      
+        console.log("Prompt Deleted:", promptResult.deletedCount);
+      
+        const paymentResult = await paymentCollection.deleteMany({
+          userEmail: user.email,
+        });
+      
+        console.log("Payment Deleted:", paymentResult.deletedCount);
+      
+        const userResult = await usersCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+      
+        console.log("User Deleted:", userResult.deletedCount);
+      
+        res.send({
+          success: true,
+          message: "User deleted successfully",
+        });
+      
+      } catch (error) {
+        console.log(error);
+      
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin block unblock api
+
+    app.patch("/api/admin/user-block/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { isBlocked } = req.body;
+      
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              isBlocked,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: isBlocked
+            ? "User blocked successfully"
+            : "User unblocked successfully",
           result,
         });
       } catch (error) {
