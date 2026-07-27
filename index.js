@@ -32,6 +32,7 @@ async function run() {
     const db = client.db('prompt_shearing_platform')
     const creatorCollection = db.collection("promt_collection")
     const usersCollection = db.collection("user");
+    const paymentCollection = db.collection("payments");
 
     //creator...........................................................
     //Getting Data for myPromt
@@ -395,15 +396,32 @@ app.get("/api/creator/dashboard", async (req, res) => {
     app.patch("/api/user-premium", async (req, res) => {
       try {
         const { email } = req.body;
-      
-        if (!email) {
-          return res.status(400).json({
+
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({
             success: false,
-            message: "Email is required",
+            message: "User not found",
           });
         }
       
-        const result = await usersCollection.updateOne(
+        // Payment Save
+        await paymentCollection.insertOne({
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          amount: 5,
+          currency: "USD",
+          plan: "Lifetime Premium",
+          paymentMethod: "Demo Card",
+          transactionId: `TXN-${Date.now()}`,
+          status: "success",
+          createdAt: new Date(),
+        });
+      
+        // Premium Update
+        await usersCollection.updateOne(
           { email },
           {
             $set: {
@@ -414,23 +432,16 @@ app.get("/api/creator/dashboard", async (req, res) => {
           }
         );
       
-        if (result.matchedCount === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "User not found",
-          });
-        }
+        const updatedUser = await usersCollection.findOne({ email });
       
-        const user = await usersCollection.findOne({ email });
-      
-        return res.json({
+        res.send({
           success: true,
           message: "Premium activated successfully",
-          user,
+          user: updatedUser,
         });
       
       } catch (error) {
-        return res.status(500).json({
+        res.status(500).send({
           success: false,
           message: error.message,
         });
@@ -439,7 +450,7 @@ app.get("/api/creator/dashboard", async (req, res) => {
 
     //Delete Account API
 
-    app.delete("/api/user/account", async (req, res) => {
+    app.delete("/api/user-account-delet", async (req, res) => {
       try {
         const { email } = req.body;
       
