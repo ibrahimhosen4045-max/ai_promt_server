@@ -31,6 +31,7 @@ async function run() {
     // await client.db("admin").command({ ping: 1 });
     const db = client.db('prompt_shearing_platform')
     const creatorCollection = db.collection("promt_collection")
+    const usersCollection = db.collection("user");
 
     //creator...........................................................
     //Getting Data for myPromt
@@ -189,11 +190,11 @@ app.get("/api/creator/dashboard", async (req, res) => {
     });
     })
 
-    //usser..............................................................
+//usser..............................................................
 
     //user add promt api
 
-app.post("/api/user/addPrompt", async (req, res) => {
+    app.post("/api/user/addPrompt", async (req, res) => {
   try {
     const { title, description, content, category, aiTool, tags, difficulty, thumbnail, userId, userName, userEmail, userImage, } = req.body;
 
@@ -240,7 +241,8 @@ app.post("/api/user/addPrompt", async (req, res) => {
       error: error.message,
     });
   }
-});
+    });
+
     //user get  mypromt api
     app.get("/api/user/myPrompt",async (req, res) => {
       const {email} = req.query;
@@ -284,6 +286,7 @@ app.post("/api/user/addPrompt", async (req, res) => {
     //user delete my promt
 
     app.delete("/api/user/:id", async (req, res) => {
+      
       try {
         const { id } = req.params;
         const { email } = req.query;
@@ -299,7 +302,194 @@ app.post("/api/user/addPrompt", async (req, res) => {
       }
     });
 
-    //app all promt ..........................................
+//profile............................
+
+    //User Profile Stats API
+
+    app.get("/api/user/profile-stats", async (req, res) => {
+      try {
+        const { email } = req.query;
+      
+        const user = await usersCollection.findOne({ email });
+      
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+      
+        const totalSubmitted = await creatorCollection.countDocuments({
+          userEmail: email,
+          role: "user",
+        });
+      
+        const approved = await creatorCollection.countDocuments({
+          userEmail: email,
+          role: "user",
+          status: "approved",
+        });
+      
+        const pending = await creatorCollection.countDocuments({
+          userEmail: email,
+          role: "user",
+          status: "pending",
+        });
+      
+        // Bookmark feature পরে করলে এখন 0 রাখো
+        const saved = 0;
+      
+        res.json({
+          success: true,
+          user,
+          stats: {
+            totalSubmitted,
+            approved,
+            pending,
+            saved,
+          },
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //Update Profile API
+
+    app.put("/api/user/profile", async (req, res) => {
+      try {
+        const { email, name, image } = req.body;
+      
+        const result = await usersCollection.updateOne(
+          { email },
+          {
+            $set: {
+              name,
+              image,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        const user = await usersCollection.findOne({ email });
+      
+        res.json({
+          success: true,
+          message: "Profile updated successfully",
+          user,
+          result,
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //Premium Upgrade API
+
+    app.patch("/api/user-premium", async (req, res) => {
+      try {
+        const { email } = req.body;
+      
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            message: "Email is required",
+          });
+        }
+      
+        const result = await usersCollection.updateOne(
+          { email },
+          {
+            $set: {
+              isPremium: true,
+              premiumSince: new Date(),
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        if (result.matchedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+      
+        const user = await usersCollection.findOne({ email });
+      
+        return res.json({
+          success: true,
+          message: "Premium activated successfully",
+          user,
+        });
+      
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //Delete Account API
+
+    app.delete("/api/user/account", async (req, res) => {
+      try {
+        const { email } = req.body;
+      
+        console.log("Email:", email);
+      
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            message: "Email is required",
+          });
+        }
+      
+        // Delete prompts
+        await creatorCollection.deleteMany({
+          $or: [
+            { userEmail: email },
+            { creatorEmail: email },
+          ],
+        });
+      
+        // Delete user
+        const userResult = await usersCollection.deleteOne({
+          email,
+        });
+      
+        if (userResult.deletedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+      
+        return res.json({
+          success: true,
+          message: "Account deleted successfully",
+        });
+      
+      } catch (error) {
+        console.error("DELETE ACCOUNT ERROR:");
+        console.error(error);
+      
+        return res.status(500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    });;
+
+
+//app all promt ..........................................
 
     app.get("/api/allPromt", async ( req, res) => {
       const result = await creatorCollection
@@ -328,4 +518,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
+
 
