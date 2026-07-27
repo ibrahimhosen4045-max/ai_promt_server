@@ -743,6 +743,55 @@ app.get("/api/creator/dashboard", async (req, res) => {
       }
     });
 
+    //admin get all prompt data this api
+
+    app.get("/api/admin/all-prompts", async (req, res) => {
+      try {
+        const prompts = await creatorCollection
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+      
+        res.send(prompts);
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin approve prompt api
+
+    app.patch("/api/admin/prompt/approve/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+          },
+          {
+            $set: {
+              status: "approved",
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Prompt approved successfully",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
