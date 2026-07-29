@@ -33,7 +33,7 @@ async function run() {
     const creatorCollection = db.collection("promt_collection")
     const usersCollection = db.collection("user");
     const paymentCollection = db.collection("payments");
-
+    const bookmarkCollection = db.collection("bookmark")
     
 
     //creator...........................................................
@@ -609,6 +609,215 @@ app.get("/api/creator/dashboard", async (req, res) => {
       res.send(result);
     })
 
+    //promt details get api
+
+    app.get("/api/prompt/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+     
+        const prompt = await creatorCollection.findOne({
+          _id: new ObjectId(id),
+        });
+      
+        if (!prompt) {
+          return res.status(404).send({
+            success: false,
+            message: "Prompt not found",
+          });
+        }
+      
+        res.send({
+          success: true,
+          data: prompt,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //promt view count api
+
+    app.patch("/api/prompt/view/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+          },
+          {
+            $inc: {
+              viewCount: 1,
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "View counted",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //copy count api
+
+    app.patch("/api/prompt/copy/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+          },
+          {
+            $inc: {
+              copyCount: 1,
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Copy count updated",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //add to boock mark api
+
+    app.post("/api/bookmark", async (req, res) => {
+      try {
+        const { promptId, userEmail } = req.body;
+      
+        if (!promptId || !userEmail) {
+          return res.status(400).send({
+            success: false,
+            message: "Prompt ID and User Email are required",
+          });
+        }
+      
+        const alreadyBookmarked = await bookmarkCollection.findOne({
+          promptId,
+          userEmail,
+        });
+      
+        if (alreadyBookmarked) {
+          return res.status(400).send({
+            success: false,
+            message: "Already bookmarked",
+          });
+        }
+      
+        await bookmarkCollection.insertOne({
+          promptId,
+          userEmail,
+          createdAt: new Date(),
+        });
+      
+        await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(promptId),
+          },
+          {
+            $inc: {
+              bookmarkCount: 1,
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Bookmark added successfully",
+        });
+      
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //bockmark delet api
+
+    app.delete("/api/bookmark/:promptId", async (req, res) => {
+      try {
+        const { promptId } = req.params;
+        const { email } = req.query;
+      
+        const result = await bookmarkCollection.deleteOne({
+          promptId,
+          userEmail: email,
+        });
+      
+        if (result.deletedCount === 0) {
+          return res.status(404).send({
+            success: false,
+            message: "Bookmark not found",
+          });
+        }
+      
+        // bookmark count কমানো
+        await creatorCollection.updateOne(
+          { _id: new ObjectId(promptId) },
+          {
+            $inc: {
+              bookmarkCount: -1,
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Bookmark removed",
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //boockmark check api
+
+    app.get("/api/bookmark/check", async (req, res) => {
+      try {
+        const { promptId, userEmail } = req.query;
+      
+        const bookmark = await bookmarkCollection.findOne({
+          promptId,
+          userEmail,
+        });
+      
+        res.send({
+          success: true,
+          bookmarked: !!bookmark,
+        });
+      
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
 
 //admin.............................................................................
 
@@ -791,6 +1000,173 @@ app.get("/api/creator/dashboard", async (req, res) => {
         });
       }
     });
+
+    //admin rejected prompt api
+
+    app.patch("/api/admin/prompt/reject/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+          },
+          {
+            $set: {
+              status: "rejected",
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: "Prompt rejected successfully",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin prompt premium and free taggle api
+
+    app.patch("/api/admin/prompt/premium/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { isPremium } = req.body;
+      
+        const result = await creatorCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+          },
+          {
+            $set: {
+              isPremium,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      
+        res.send({
+          success: true,
+          message: isPremium
+            ? "Prompt marked as Premium"
+            : "Prompt marked as Free",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin delet promt api
+
+    app.delete("/api/admin/prompt/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+      
+        const result = await creatorCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+      
+        if (result.deletedCount === 0) {
+          return res.status(404).send({
+            success: false,
+            message: "Prompt not found",
+          });
+        }
+      
+        res.send({
+          success: true,
+          message: "Prompt deleted successfully",
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin all payment state
+
+    app.get("/api/admin/payment-stats", async (req, res) => {
+      try {
+        const payments = await paymentCollection.find().toArray();
+      
+        const totalPayments = payments.length;
+
+        const users = await usersCollection.find().toArray()
+
+        const premiumUsers = users.filter(
+          (user) => user.isPremium === true
+        ).length
+      
+        const totalRevenue = payments.reduce(
+          (sum, payment) => sum + Number(payment.amount || 0),
+          0
+        );
+      
+        const successfulPayments = payments.filter(
+          (payment) => payment.status === "success"
+        ).length;
+      
+        const failedPayments = payments.filter(
+          (payment) => payment.status === "failed"
+        ).length;
+      
+        const pendingPayments = payments.filter(
+          (payment) => payment.status === "pending"
+        ).length;
+      
+        res.send({
+          success: true,
+          data: {
+            totalPayments,
+            totalRevenue,
+            successfulPayments,
+            failedPayments,
+            pendingPayments,
+            premiumUsers
+          },
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    //admin all payment history
+
+    app.get("/api/admin/payments", async (req, res) => {
+      try {
+        const payments = await paymentCollection
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+      
+        res.send({
+          success: true,
+          data: payments,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
