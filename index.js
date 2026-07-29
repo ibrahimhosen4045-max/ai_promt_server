@@ -37,6 +37,7 @@ async function run() {
     const ratingCollection = db.collection("ratings");
     const reviewCollection = db.collection("reviews");
     const reportCollection = db.collection("reports");
+    const copyHistoryCollection = db.collection("copyHistory");
     
 
     //creator...........................................................
@@ -251,6 +252,85 @@ app.get("/api/creator/dashboard", async (req, res) => {
     })
 
 //usser..............................................................
+
+    //user overview dashboard api
+
+app.get("/api/user/dashboard-overview", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await usersCollection.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Total Bookmarks
+    const totalBookmarks = await bookmarkCollection.countDocuments({
+      userEmail: email,
+    });
+
+    const prompts = await creatorCollection.find().toArray();
+
+const totalCopies = prompts.reduce(
+  (sum, item) => sum + (item.copyCount || 0),
+  0
+);
+
+    // Total Reviews
+    const totalReviews = await reviewCollection.countDocuments({
+      userEmail: email,
+    });
+
+    // Total Reports
+    const totalReports = await reportCollection.countDocuments({
+      userEmail: email,
+    });
+
+    // Recent Bookmarks
+    const recentBookmarks = await bookmarkCollection
+      .find({ userEmail: email })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .toArray();
+
+    // Copy Chart Data (এখন empty)
+    const copyHistory = [];
+
+    res.json({
+      success: true,
+      overview: {
+        premium: user.isPremium || false,
+        joinedAt: user.createdAt,
+
+        savedPrompts: totalBookmarks,
+        copiedPrompts: totalCopies,
+        reviews: totalReviews,
+        reports: totalReports,
+
+        copyHistory,
+        recentBookmarks,
+      },
+    });
+  } catch (error) {
+    console.error("Dashboard Overview Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
     //user add promt api
 
