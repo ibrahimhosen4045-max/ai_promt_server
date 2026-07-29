@@ -34,6 +34,9 @@ async function run() {
     const usersCollection = db.collection("user");
     const paymentCollection = db.collection("payments");
     const bookmarkCollection = db.collection("bookmark")
+    const ratingCollection = db.collection("ratings");
+    const reviewCollection = db.collection("reviews");
+    const reportCollection = db.collection("reports");
     
 
     //creator...........................................................
@@ -797,26 +800,223 @@ app.get("/api/creator/dashboard", async (req, res) => {
     //boockmark check api
 
     app.get("/api/bookmark/check", async (req, res) => {
-      try {
-        const { promptId, userEmail } = req.query;
-      
-        const bookmark = await bookmarkCollection.findOne({
-          promptId,
-          userEmail,
-        });
-      
-        res.send({
-          success: true,
-          bookmarked: !!bookmark,
-        });
-      
-      } catch (error) {
-        res.status(500).send({
-          success: false,
-          message: error.message,
-        });
-      }
+  try {
+    const { promptId, email } = req.query;
+
+    const bookmark = await bookmarkCollection.findOne({
+      promptId,
+      userEmail: email,
     });
+
+    res.send({
+      success: true,
+      bookmarked: !!bookmark,
+    });
+
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+    //Rating submit api 
+
+    app.post("/api/rating", async (req, res) => {
+  try {
+    const { promptId, userEmail, userName, rating } = req.body;
+
+    
+
+    const existing = await ratingCollection.findOne({
+      promptId,
+      userEmail,
+    });
+
+    if (existing) {
+      await ratingCollection.updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            rating,
+            updatedAt: new Date(),
+          },
+        }
+      );
+    } else {
+      await ratingCollection.insertOne({
+        promptId,
+        userEmail,
+        userName,
+        rating,
+        createdAt: new Date(),
+      });
+    }
+
+    const ratings = await ratingCollection
+      .find({ promptId })
+      .toArray();
+
+    const total = ratings.reduce((sum, r) => sum + Number(r.rating), 0);
+
+    const averageRating = ratings.length
+      ? Number((total / ratings.length).toFixed(1))
+      : 0;
+
+    await creatorCollection.updateOne(
+      { _id: new ObjectId(promptId) },
+      {
+        $set: {
+          averageRating,
+          reviewCount: ratings.length,
+        },
+      }
+    );
+
+    res.send({
+      success: true,
+      message: "Rating submitted successfully",
+      averageRating,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+    });
+
+    //get Rating api
+
+app.get("/api/rating/check", async (req, res) => {
+  try {
+    const { promptId, email } = req.query;
+
+    const rating = await ratingCollection.findOne({
+      promptId,
+      userEmail: email,
+    });
+
+    res.send({
+      success: true,
+      rating: rating?.rating || 0,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//user reviw api
+
+app.post("/api/review", async (req, res) => {
+  try {
+    const {
+      promptId,
+      userEmail,
+      userName,
+      userImage,
+      rating,
+      review,
+    } = req.body;
+
+    await reviewCollection.insertOne({
+      promptId,
+      userEmail,
+      userName,
+      userImage,
+      rating,
+      review,
+      createdAt: new Date(),
+    });
+
+    res.send({
+      success: true,
+      message: "Review submitted successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//get reviw check api
+
+app.get("/api/review/:promptId", async (req, res) => {
+  try {
+    const reviews = await reviewCollection
+      .find({
+        promptId: req.params.promptId,
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .toArray();
+
+    res.send({
+      success: true,
+      data: reviews,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//get reportet promt
+
+app.post("/api/report", async (req, res) => {
+  try {
+    const {
+      promptId,
+      userEmail,
+      userName,
+      reason,
+      description,
+    } = req.body;
+
+    const existing = await reportCollection.findOne({
+      promptId,
+      userEmail,
+    });
+
+    if (existing) {
+      return res.status(400).send({
+        success: false,
+        message: "You already reported this prompt.",
+      });
+    }
+
+    await reportCollection.insertOne({
+      promptId,
+      userEmail,
+      userName,
+      reason,
+      description,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    res.send({
+      success: true,
+      message: "Report submitted successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
 
 
 //admin.............................................................................
@@ -1165,6 +1365,50 @@ app.get("/api/creator/dashboard", async (req, res) => {
         });
       }
     });
+
+    //Admin Get All Reports
+
+app.get("/api/admin/reports", async (req, res) => {
+  try {
+    const reports = await reportCollection
+      .find()
+      .sort({
+        createdAt: -1,
+      })
+      .toArray();
+
+    res.send({
+      success: true,
+      data: reports,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//Delete Report
+
+app.delete("/api/admin/report/:id", async (req, res) => {
+  try {
+    const result = await reportCollection.deleteOne({
+      _id: new ObjectId(req.params.id),
+    });
+
+    res.send({
+      success: true,
+      message: "Report deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 
 
