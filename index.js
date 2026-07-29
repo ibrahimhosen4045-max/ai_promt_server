@@ -150,6 +150,19 @@ app.get("/api/creator/dashboard", async (req, res) => {
       0
     );
 
+    // Prompt Status Counts
+    const approved = prompts.filter(
+      (prompt) => prompt.status === "approved"
+    ).length;
+
+    const pending = prompts.filter(
+      (prompt) => prompt.status === "pending"
+    ).length;
+
+    const rejected = prompts.filter(
+      (prompt) => prompt.status === "rejected"
+    ).length;
+
     // Prompt Growth Chart
     const growth = await creatorCollection.aggregate([
       {
@@ -187,6 +200,9 @@ app.get("/api/creator/dashboard", async (req, res) => {
       totalBookmarks,
       totalEarnings,
       growth,
+      approved,
+      pending,
+      rejected,
     });
 
   } catch (error) {
@@ -379,60 +395,180 @@ app.get("/api/creator/dashboard", async (req, res) => {
       }
     });
 
+    //user add boock mark
+
+    app.get("/api/bookmark", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).send({
+        success: false,
+        message: "User email is required",
+      });
+    }
+
+    // User bookmark list
+    const bookmarks = await bookmarkCollection
+      .find({ userEmail: email })
+      .toArray();
+
+    if (bookmarks.length === 0) {
+      return res.send({
+        success: true,
+        bookmarks: [],
+      });
+    }
+
+    // Prompt IDs
+    const promptIds = bookmarks.map(
+      (item) => new ObjectId(item.promptId)
+    );
+
+    // Prompt details
+    const prompts = await creatorCollection
+      .find({
+        _id: { $in: promptIds },
+      })
+      .toArray();
+
+    // Merge bookmark + prompt data
+    const result = bookmarks.map((bookmark) => {
+      const prompt = prompts.find(
+        (item) => item._id.toString() === bookmark.promptId
+      );
+
+      return {
+        bookmarkId: bookmark._id,
+        bookmarkedAt: bookmark.createdAt,
+
+        ...(prompt || {}),
+      };
+    });
+
+    res.send({
+      success: true,
+      total: result.length,
+      bookmarks: result,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//bookmark remove api
+
+app.delete("/api/bookmark/:promptId", async (req, res) => {
+  try {
+    const { promptId } = req.params;
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).send({
+        success: false,
+        message: "User email is required",
+      });
+    }
+
+    // Bookmark খুঁজে বের করা
+    const bookmark = await bookmarkCollection.findOne({
+      promptId,
+      userEmail: email,
+    });
+
+    if (!bookmark) {
+      return res.status(404).send({
+        success: false,
+        message: "Bookmark not found",
+      });
+    }
+
+    // Bookmark delete
+    await bookmarkCollection.deleteOne({
+      _id: bookmark._id,
+    });
+
+    // Prompt এর bookmarkCount ১ কমানো
+    await creatorCollection.updateOne(
+      { _id: new ObjectId(promptId) },
+      {
+        $inc: {
+          bookmarkCount: -1,
+        },
+      }
+    );
+
+    res.send({
+      success: true,
+      message: "Bookmark removed successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 //profile............................
 
     //User Profile Stats API
 
     app.get("/api/user/profile-stats", async (req, res) => {
-      try {
-        const { email } = req.query;
-      
-        const user = await usersCollection.findOne({ email });
-      
-        if (!user) {
-          return res.status(404).json({
-            success: false,
-            message: "User not found",
-          });
-        }
-      
-        const totalSubmitted = await creatorCollection.countDocuments({
-          userEmail: email,
-          role: "user",
-        });
-      
-        const approved = await creatorCollection.countDocuments({
-          userEmail: email,
-          role: "user",
-          status: "approved",
-        });
-      
-        const pending = await creatorCollection.countDocuments({
-          userEmail: email,
-          role: "user",
-          status: "pending",
-        });
-      
-        // Bookmark feature পরে করলে এখন 0 রাখো
-        const saved = 0;
-      
-        res.json({
-          success: true,
-          user,
-          stats: {
-            totalSubmitted,
-            approved,
-            pending,
-            saved,
-          },
-        });
-      } catch (error) {
-        res.status(500).json({
-          success: false,
-          message: error.message,
-        });
-      }
+  try {
+    const { email } = req.query;
+
+    const user = await usersCollection.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const totalSubmitted = await creatorCollection.countDocuments({
+      userEmail: email,
+      role: "user",
     });
+
+    const approved = await creatorCollection.countDocuments({
+      userEmail: email,
+      role: "user",
+      status: "approved",
+    });
+
+    const pending = await creatorCollection.countDocuments({
+      userEmail: email,
+      role: "user",
+      status: "pending",
+    });
+
+    // Total Saved Bookmarks
+    const saved = await bookmarkCollection.countDocuments({
+      userEmail: email,
+    });
+
+    res.json({
+      success: true,
+      user,
+      stats: {
+        totalSubmitted,
+        approved,
+        pending,
+        saved,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
     //Update Profile API
 
@@ -1401,6 +1537,241 @@ app.delete("/api/admin/report/:id", async (req, res) => {
       success: true,
       message: "Report deleted successfully",
       deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//admin overview api
+
+app.get("/api/admin/dashboard-overview", async (req, res) => {
+  try {
+    const months = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    // =============================
+    // Summary Counts
+    // =============================
+
+    const totalUsers = await usersCollection.countDocuments();
+
+    const totalCreators = await usersCollection.countDocuments({
+      role: "Creator",
+    });
+
+    const totalPrompts = await creatorCollection.countDocuments();
+
+    const totalPremiumUsers = await usersCollection.countDocuments({
+      isPremium: true,
+    });
+
+    const totalBookmarks = await bookmarkCollection.countDocuments();
+
+    const totalReports = await reportCollection.countDocuments();
+
+    const totalReviews = await reviewCollection.countDocuments();
+
+    // =============================
+    // Revenue
+    // =============================
+
+    const revenueResult = await paymentCollection
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: "$amount",
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    const totalRevenue = revenueResult[0]?.totalRevenue || 0;
+
+    // =============================
+    // Prompt Status
+    // =============================
+
+    const approvedPrompts = await creatorCollection.countDocuments({
+      status: "approved",
+    });
+
+    const pendingPrompts = await creatorCollection.countDocuments({
+      status: "pending",
+    });
+
+    const rejectedPrompts = await creatorCollection.countDocuments({
+      status: "rejected",
+    });
+
+    // =============================
+    // Recent Users
+    // =============================
+
+    const recentUsers = await usersCollection
+      .find()
+      .sort({
+        createdAt: -1,
+      })
+      .limit(5)
+      .toArray();
+
+    // =============================
+    // Recent Prompts
+    // =============================
+
+    const recentPrompts = await creatorCollection
+      .find()
+      .sort({
+        createdAt: -1,
+      })
+      .limit(5)
+      .toArray();
+
+    // =============================
+    // Top Creators
+    // =============================
+
+    const topCreatorsRaw = await creatorCollection
+      .aggregate([
+        {
+          $group: {
+            _id: "$creatorName",
+
+            promptsCount: {
+              $sum: 1,
+            },
+
+            copiesCount: {
+              $sum: "$copyCount",
+            },
+          },
+        },
+        {
+          $sort: {
+            copiesCount: -1,
+          },
+        },
+        {
+          $limit: 5,
+        },
+      ])
+      .toArray();
+
+    const topCreators = topCreatorsRaw.map((item) => ({
+      name: item._id,
+      promptsCount: item.promptsCount,
+      copiesCount: item.copiesCount,
+    }));
+
+    // =============================
+    // Monthly Users
+    // =============================
+
+    const monthlyUsersRaw = await usersCollection
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              $month: "$createdAt",
+            },
+            total: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $sort: {
+            _id: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    const monthlyUsers = monthlyUsersRaw.map((item) => ({
+      month: months[item._id],
+      count: item.total,
+    }));
+
+    // =============================
+    // Monthly Prompts
+    // =============================
+
+    const monthlyPromptsRaw = await creatorCollection
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              $month: "$createdAt",
+            },
+            total: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $sort: {
+            _id: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    const monthlyPrompts = monthlyPromptsRaw.map((item) => ({
+      month: months[item._id],
+      count: item.total,
+    }));
+
+    // =============================
+    // Response
+    // =============================
+
+    res.send({
+      success: true,
+      data: {
+        // Summary
+        totalUsers,
+        totalCreators,
+        totalPrompts,
+        totalPremiumUsers,
+        totalBookmarks,
+        totalReviews,
+        totalReports,
+        totalRevenue,
+
+        // Prompt Status
+        approvedPrompts,
+        pendingPrompts,
+        rejectedPrompts,
+
+        // Charts
+        monthlyUsers,
+        monthlyPrompts,
+        topCreators,
+
+        // Tables
+        recentUsers,
+        recentPrompts,
+      },
     });
   } catch (error) {
     res.status(500).send({
