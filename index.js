@@ -828,6 +828,106 @@ app.delete("/api/bookmark/:promptId", async (req, res) => {
       res.send(result);
     })
 
+    //search function emplement banner
+
+    app.get("/api/prompts/search", async (req, res) => {
+      try {
+        const { q } = req.query;
+      
+        // যদি search না থাকে তাহলে approved prompt return করবে
+        if (!q || !q.trim()) {
+          const prompts = await creatorCollection
+            .find({ status: "approved" })
+            .sort({ createdAt: -1 })
+            .toArray();
+        
+          return res.send({
+            success: true,
+            total: prompts.length,
+            data: prompts,
+          });
+        }
+      
+        const keyword = q.trim();
+      
+        const prompts = await creatorCollection
+          .find({
+            status: "approved",
+            $or: [
+              {
+                title: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                description: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                content: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                category: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                aiTool: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                difficulty: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                creatorName: {
+                  $regex: keyword,
+                  $options: "i",
+                },
+              },
+              {
+                tags: {
+                  $elemMatch: {
+                    $regex: keyword,
+                    $options: "i",
+                  },
+                },
+              },
+            ],
+          })
+          .sort({
+            copyCount: -1,
+            createdAt: -1,
+          })
+          .toArray();
+        
+        res.send({
+          success: true,
+          keyword,
+          total: prompts.length,
+          data: prompts,
+        });
+      } catch (error) {
+        console.error(error);
+      
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
     //promt details get api
 
     app.get("/api/prompt/:id", async (req, res) => {
