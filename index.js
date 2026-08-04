@@ -289,7 +289,7 @@ app.get("/api/creator/dashboard", verifyJWT,  async (req, res) => {
 
     //user overview dashboard api
 
-app.get("/api/user/dashboard-overview", verifyJWT, async (req, res) => {
+app.get("/api/user/dashboard-overview",  async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -368,7 +368,7 @@ const totalCopies = prompts.reduce(
 
     //user add promt api
 
-    app.post("/api/user/addPrompt", verifyJWT, async (req, res) => {
+    app.post("/api/user/addPrompt",  async (req, res) => {
   try {
     const { title, description, content, category, aiTool, tags, difficulty, thumbnail, userId, userName, userEmail, userImage, } = req.body;
 
@@ -429,7 +429,7 @@ const totalCopies = prompts.reduce(
     });
 
     //user get  mypromt api
-    app.get("/api/user/myPrompt", verifyJWT, async (req, res) => {
+    app.get("/api/user/myPrompt",  async (req, res) => {
       const {email} = req.query;
       const result = await creatorCollection.find({userEmail: email, role: "user"}).toArray();
       res.send(result)
@@ -437,7 +437,7 @@ const totalCopies = prompts.reduce(
 
     //user update mypromt
 
-    app.patch("/api/user/:id", verifyJWT, async (req, res)=> {
+    app.patch("/api/user/:id",  async (req, res)=> {
       try{
        const { id } = req.params;
        const { userEmail, ...updateData } = req.body;
@@ -481,7 +481,7 @@ const totalCopies = prompts.reduce(
 
     //user delete my promt
 
-    app.delete("/api/user/:id", verifyJWT, async (req, res) => {
+    app.delete("/api/user/:id",  async (req, res) => {
       
       try {
         const { id } = req.params;
@@ -511,7 +511,7 @@ const totalCopies = prompts.reduce(
 
     //user add boock mark
 
-    app.get("/api/bookmark", verifyJWT, async (req, res) => {
+    app.get("/api/bookmark",  async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -575,7 +575,7 @@ const totalCopies = prompts.reduce(
 
 //bookmark remove api
 
-app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
+app.delete("/api/bookmark/:promptId",  async (req, res) => {
   try {
     const { promptId } = req.params;
     const { email } = req.query;
@@ -631,7 +631,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //User Profile Stats API
 
-    app.get("/api/user/profile-stats", verifyJWT, async (req, res) => {
+    app.get("/api/user/profile-stats",  async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -686,7 +686,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //Update Profile API
 
-    app.put("/api/user/profile", verifyJWT, async (req, res) => {
+    app.put("/api/user/profile",  async (req, res) => {
       try {
         const { email, name, image } = req.body;
 
@@ -730,7 +730,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //Premium Upgrade API
 
-    app.patch("/api/user-premium", verifyJWT, async (req, res) => {
+    app.patch("/api/user-premium",  async (req, res) => {
       try {
         const { email } = req.body;
 
@@ -799,7 +799,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //Delete Account API
 
-    app.delete("/api/user-account-delet", verifyJWT, async (req, res) => {
+    app.delete("/api/user-account-delet",  async (req, res) => {
       try {
         const { email } = req.body;
       
@@ -851,7 +851,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
 //app all promt ..........................................
 
-    app.get("/api/prompts/featured", verifyJWT, async (req, res) => {
+    app.get("/api/prompts/featured",  async (req, res) => {
   try {
     const featuredPrompts = await creatorCollection
       .find({
@@ -882,7 +882,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
   }
 });
 
-    app.get("/api/allPromt", verifyJWT, async ( req, res) => {
+    app.get("/api/allPromt",  async ( req, res) => {
       const result = await creatorCollection
       .find({
       status: "approved",
@@ -895,7 +895,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //search function emplement banner
 
-    app.get("/api/prompts/search", verifyJWT, async (req, res) => {
+    app.get("/api/prompts/search", async (req, res) => {
       try {
         const { q } = req.query;
       
@@ -995,7 +995,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //promt details get api
 
-    app.get("/api/prompt/:id", verifyJWT, async (req, res) => {
+    app.get("/api/prompt/:id",  async (req, res) => {
       try {
         const { id } = req.params;
      
@@ -1024,7 +1024,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //promt view count api
 
-    app.patch("/api/prompt/view/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/prompt/view/:id",  async (req, res) => {
       try {
         const { id } = req.params;
       
@@ -1054,7 +1054,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //copy count api
 
-    app.patch("/api/prompt/copy/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/prompt/copy/:id",  async (req, res) => {
       try {
         const { id } = req.params;
       
@@ -1084,7 +1084,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //add to boock mark api
 
-    app.post("/api/bookmark", verifyJWT, async (req, res) => {
+    app.post("/api/bookmark",  async (req, res) => {
       try {
         const { promptId, userEmail } = req.body;
       
@@ -1139,7 +1139,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //bockmark delet api
 
-    app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
+    app.delete("/api/bookmark/:promptId",  async (req, res) => {
       try {
         const { promptId } = req.params;
         const { email } = req.query;
@@ -1180,7 +1180,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //boockmark check api
 
-    app.get("/api/bookmark/check", verifyJWT, async (req, res) => {
+    app.get("/api/bookmark/check",  async (req, res) => {
   try {
     const { promptId, email } = req.query;
 
@@ -1204,7 +1204,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //Rating submit api 
 
-    app.post("/api/rating", verifyJWT, async (req, res) => {
+    app.post("/api/rating",  async (req, res) => {
   try {
     const { promptId, userEmail, userName, rating } = req.body;
 
@@ -1270,7 +1270,7 @@ app.delete("/api/bookmark/:promptId", verifyJWT, async (req, res) => {
 
     //get Rating api
 
-app.get("/api/rating/check", verifyJWT, async (req, res) => {
+app.get("/api/rating/check",  async (req, res) => {
   try {
     const { promptId, email } = req.query;
 
@@ -1293,7 +1293,7 @@ app.get("/api/rating/check", verifyJWT, async (req, res) => {
 
 //user reviw api
 
-app.post("/api/review", verifyJWT, async (req, res) => {
+app.post("/api/review",  async (req, res) => {
   try {
     const {
       promptId,
@@ -1328,7 +1328,7 @@ app.post("/api/review", verifyJWT, async (req, res) => {
 
 //get reviw check api
 
-app.get("/api/review/:promptId", verifyJWT, async (req, res) => {
+app.get("/api/review/:promptId",  async (req, res) => {
   try {
     const reviews = await reviewCollection
       .find({
@@ -1353,7 +1353,7 @@ app.get("/api/review/:promptId", verifyJWT, async (req, res) => {
 
 //get reportet promt
 
-app.post("/api/report", verifyJWT, async (req, res) => {
+app.post("/api/report",  async (req, res) => {
   try {
     const {
       promptId,
@@ -1404,7 +1404,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
 // all regisrer user
 
-    app.get("/api/allUser/register", verifyJWT, async(req, res) => {
+    app.get("/api/allUser/register",  async(req, res) => {
       try {
         const result = await usersCollection.find().toArray()
         res.send(result)
@@ -1415,7 +1415,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin user er role chang api
 
-    app.patch("/api/admin/user/role/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/admin/user/role/:id",  async (req, res) => {
       try {
         const { id } = req.params;
         const { role } = req.body;
@@ -1445,7 +1445,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin user delet api
 
-    app.delete("/api/admin/user-delet/:id", verifyJWT, async (req, res) => {
+    app.delete("/api/admin/user-delet/:id",  async (req, res) => {
       try {
         console.log("DELETE API HIT");
       
@@ -1503,7 +1503,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin block unblock api
 
-    app.patch("/api/admin/user-block/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/admin/user-block/:id",  async (req, res) => {
       try {
         const { id } = req.params;
         const { isBlocked } = req.body;
@@ -1535,7 +1535,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin get all prompt data this api
 
-    app.get("/api/admin/all-prompts", verifyJWT, async (req, res) => {
+    app.get("/api/admin/all-prompts",  async (req, res) => {
       try {
         const prompts = await creatorCollection
           .find()
@@ -1553,7 +1553,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin approve prompt api
 
-    app.patch("/api/admin/prompt/approve/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/admin/prompt/approve/:id",  async (req, res) => {
       try {
         const { id } = req.params;
       
@@ -1584,7 +1584,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin rejected prompt api
 
-    app.patch("/api/admin/prompt/reject/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/admin/prompt/reject/:id",  async (req, res) => {
       try {
         const { id } = req.params;
       
@@ -1615,7 +1615,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin prompt premium and free taggle api
 
-    app.patch("/api/admin/prompt/premium/:id", verifyJWT, async (req, res) => {
+    app.patch("/api/admin/prompt/premium/:id",  async (req, res) => {
       try {
         const { id } = req.params;
         const { isPremium } = req.body;
@@ -1649,7 +1649,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin delet promt api
 
-    app.delete("/api/admin/prompt/:id", verifyJWT, async (req, res) => {
+    app.delete("/api/admin/prompt/:id",  async (req, res) => {
       try {
         const { id } = req.params;
       
@@ -1678,7 +1678,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin all payment state
 
-    app.get("/api/admin/payment-stats", verifyJWT, async (req, res) => {
+    app.get("/api/admin/payment-stats",  async (req, res) => {
       try {
         const payments = await paymentCollection.find().toArray();
       
@@ -1728,7 +1728,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //admin all payment history
 
-    app.get("/api/admin/payments", verifyJWT, async (req, res) => {
+    app.get("/api/admin/payments",  async (req, res) => {
       try {
         const payments = await paymentCollection
           .find()
@@ -1749,7 +1749,7 @@ app.post("/api/report", verifyJWT, async (req, res) => {
 
     //Admin Get All Reports
 
-app.get("/api/admin/reports", verifyJWT, async (req, res) => {
+app.get("/api/admin/reports",  async (req, res) => {
   try {
     const reports = await reportCollection
       .find()
@@ -1772,7 +1772,7 @@ app.get("/api/admin/reports", verifyJWT, async (req, res) => {
 
 //Delete Report
 
-app.delete("/api/admin/report/:id", verifyJWT, async (req, res) => {
+app.delete("/api/admin/report/:id",  async (req, res) => {
   try {
     const result = await reportCollection.deleteOne({
       _id: new ObjectId(req.params.id),
@@ -1793,7 +1793,7 @@ app.delete("/api/admin/report/:id", verifyJWT, async (req, res) => {
 
 //admin overview api
 
-app.get("/api/admin/dashboard-overview", verifyJWT, async (req, res) => {
+app.get("/api/admin/dashboard-overview",  async (req, res) => {
   try {
     const months = [
       "",
@@ -2025,7 +2025,6 @@ app.get("/api/admin/dashboard-overview", verifyJWT, async (req, res) => {
     });
   }
 });
-
 
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
