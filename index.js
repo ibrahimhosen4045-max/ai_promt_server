@@ -30,7 +30,7 @@ const verifyJWT = async (req, res, next) => {
     const { createRemoteJWKSet, jwtVerify } = await import("jose");
 
     const JWKS = createRemoteJWKSet(
-      new URL("http://localhost:3000/api/auth/jwks")
+      new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`)
     );
 
     const authHeader = req.headers.authorization;
