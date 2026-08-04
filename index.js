@@ -8,6 +8,14 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 const port = process.env.PORT;
 
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://b13-a10-ai-promt.vercel.app"
+  ],
+  credentials: true,
+}));
+
 app.use(cors());
 app.use(express.json());
 
