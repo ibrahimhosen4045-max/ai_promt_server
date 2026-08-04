@@ -25,39 +25,39 @@ const client = new MongoClient(uri, {
   }
 });
 
-const verifyJWT = async (req, res, next) => {
-  try {
-    const { createRemoteJWKSet, jwtVerify } = await import("jose");
+// const verifyJWT = async (req, res, next) => {
+//   try {
+//     const { createRemoteJWKSet, jwtVerify } = await import("jose");
 
-    const JWKS = createRemoteJWKSet(
-      new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`)
-    );
+//     const JWKS = createRemoteJWKSet(
+//       new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`)
+//     );
 
-    const authHeader = req.headers.authorization;
+//     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).send({
-        message: "Unauthorized",
-      });
-    }
+//     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+//       return res.status(401).send({
+//         message: "Unauthorized",
+//       });
+//     }
 
-    const token = authHeader.split(" ")[1];
+//     const token = authHeader.split(" ")[1];
 
-    const { payload } = await jwtVerify(token, JWKS);
+//     const { payload } = await jwtVerify(token, JWKS);
 
-    req.user = payload;
+//     req.user = payload;
 
-    next();
-  } catch (err) {
-    console.log(err);
+//     next();
+//   } catch (err) {
+//     console.log(err);
 
-    return res.status(401).send({
-      message: "Invalid Token",
-    });
-  }
-};
+//     return res.status(401).send({
+//       message: "Invalid Token",
+//     });
+//   }
+// };
 
-module.exports = verifyJWT;
+// module.exports = verifyJWT;
 
 async function run() {
   try {
@@ -78,14 +78,14 @@ async function run() {
 
     //creator...........................................................
     //Getting Data for myPromt
-    app.get("/api/creator/mypromt", verifyJWT,  async (req, res) => {
+    app.get("/api/creator/mypromt",   async (req, res) => {
       const {email} = req.query;
       const result = await creatorCollection.find({creatorEmail: email}).toArray();
       res.send(result)
     })
 
     //delet api in myCreator desboard
-    app.delete("/api/creator/:id", verifyJWT, async (req, res) => {
+    app.delete("/api/creator/:id",  async (req, res) => {
       try {
         const { id } = req.params;
         const { email } = req.query;
@@ -116,7 +116,7 @@ async function run() {
 
     //Update creator api deshboard
 
-    app.patch("/api/creator/:id", verifyJWT, async (req, res)=> {
+    app.patch("/api/creator/:id",  async (req, res)=> {
       try{
       
        const { id } = req.params;
@@ -162,7 +162,7 @@ async function run() {
     //creator dashboard api
 
     // Creator Dashboard Analytics
-app.get("/api/creator/dashboard", verifyJWT,  async (req, res) => {
+app.get("/api/creator/dashboard",   async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -251,7 +251,7 @@ app.get("/api/creator/dashboard", verifyJWT,  async (req, res) => {
 
 
     // add promt with creatorpage
-    app.post("/api/creator", verifyJWT,   async (req, res) => {
+    app.post("/api/creator",    async (req, res) => {
       const {title, description, content, category, aiTool, tags, difficulty, thumbnail, visibility,  creatorId, creatorName, creatorEmail, creatorImage,} = req.body;
 
 
